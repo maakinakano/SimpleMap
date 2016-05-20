@@ -1,15 +1,16 @@
 package jp.ac.titech.itpro.sdl.simplemap;
 
+import android.support.annotation.NonNull;
 import android.Manifest;
 import android.content.pm.PackageManager;
 import android.location.Location;
-import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.View;
 import android.widget.Toast;
 
 import com.google.android.gms.common.ConnectionResult;
@@ -23,6 +24,7 @@ import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.MapFragment;
 import com.google.android.gms.maps.OnMapReadyCallback;
+import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
 
 public class MainActivity extends AppCompatActivity implements
@@ -33,6 +35,7 @@ public class MainActivity extends AppCompatActivity implements
     private GoogleApiClient googleApiClient;
     private LocationRequest locationRequest;
     private boolean requestingLocationUpdate;
+    private Location loc;
 
     private enum UpdatingState {STOPPED, REQUESTING, STARTED}
 
@@ -121,8 +124,16 @@ public class MainActivity extends AppCompatActivity implements
     @Override
     public void onLocationChanged(Location location) {
         Log.d(TAG, "onLocationChanged: " + location);
-        googleMap.animateCamera(CameraUpdateFactory
-                .newLatLng(new LatLng(location.getLatitude(), location.getLongitude())));
+        loc = location;
+    }
+
+    public void onClickButton(View v) {
+        if(loc == null)
+            return;
+        CameraPosition cp = new CameraPosition.Builder()
+                .target(new LatLng(loc.getLatitude(), loc.getLongitude()))
+                .zoom(17).build();
+        googleMap.animateCamera(CameraUpdateFactory.newCameraPosition(cp));
     }
 
     @Override
@@ -150,7 +161,12 @@ public class MainActivity extends AppCompatActivity implements
             }
         }
         LocationServices.FusedLocationApi.requestLocationUpdates(googleApiClient, locationRequest, this);
+        loc = LocationServices.FusedLocationApi.getLastLocation(googleApiClient);
         state = UpdatingState.STARTED;
+        CameraPosition cp = new CameraPosition.Builder()
+                .target(new LatLng(loc.getLatitude(), loc.getLongitude()))
+                .zoom(17).build();
+        googleMap.animateCamera(CameraUpdateFactory.newCameraPosition(cp));
     }
 
     private void stopLocationUpdate() {
